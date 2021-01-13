@@ -6,6 +6,8 @@ $arrayVac = [];
 $nbrRegion = 0;
 $valueDay = 0;
 
+$population = 67848156;
+
 $arrayReg = [
 	"GDP" => "Guadeloupe", 
 	"MTQ" => "Martinique", 
@@ -30,8 +32,20 @@ $arrayReg = [
 $total = 0;
 $totalVac = [];
 $dateBegin = "2021-01-11";
+$newVacByDay = [];
+$dayLastData = end($vaccins)['date'];
+
+
+$totalVac["2021-01-07"] = 45695;
+$totalVac["2021-01-08"] = 80000;
+$totalVac["2021-01-09"] = 93000;
+$totalVac["2021-01-10"] = 0;
 
 foreach($vaccins as $key => $vaccin) {
+	if(!isset($newVacByDay[$vaccin['date']])) {
+		$newVacByDay[$vaccin['date']] = 0;
+	}
+	$newVacByDay[$vaccin['date']] += $vaccin['totalVaccines']; 
 	if($vaccin['date'] == date('Y-m-d')) {
 		$total += $vaccin['totalVaccines'];
 	}
@@ -100,19 +114,38 @@ foreach($vaccins as $vaccin) {
 	$totalVac[$vaccin['date']] += $vaccin['totalVaccines'];
 }
 
-//echo "Total : " . $total . '<br>';
-var_dump($totalVac);
-
-foreach($arrayReg as $key => $region) {
-	echo "Augmentation en " . $region . " de " . getIncrease($arrayVac, $key, "2021-01-12", date("Y-m-d")) . " vaccinations sur la dernière journée.<br>";
-}
-
 function getIncrease($arrayVac, $id, $begin, $end) 
 {
 	return $arrayVac[$id][$end] - $arrayVac[$id][$begin];
 }
 
-var_dump($arrayVac);?>
+function getIncreaseDay($arrayVac, $begin, $end)
+{
+	$value = 0;
+	foreach($arrayVac as $key => $vac) {
+		$value += getIncrease($arrayVac, $key, $begin, $end);
+	}
+	return $value;
+}
+
+function getAverage7Days($arrayVac, $now) 
+{
+	$total = 0;
+	$dateEnd = DateTime::createFromFormat('Y-m-d', $now); 
+	$dateBegin = DateTime::createFromFormat('Y-m-d', $now); 
+	$dateBegin->sub(new DateInterval('P1D'));
+	
+	for($i = 0; $i < 2; $i++) {
+		$total += getIncreaseDay($arrayVac, $dateBegin->format("Y-m-d"), $dateEnd->format("Y-m-d"));
+		$dateEnd->sub(new DateInterval('P1D'));
+		$dateBegin->sub(new DateInterval('P1D'));
+	}
+	return $total / 2;
+}
+
+//var_dump($newVacByDay);
+//var_dump($arrayVac);
+?>
 
 
 <!DOCTYPE html>
@@ -122,8 +155,78 @@ var_dump($arrayVac);?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+	<style>
+		body {
+			margin: 0;
+			font-family: 'Roboto';
+		}
+	
+		.header {
+			background-color: #e5e5e5;
+			width: 100vw;
+			height: 50px;
+			text-align: center;
+		}
+		
+		h1 {
+			margin: 0;
+			font-size: 36px;
+		}
+		
+		.container {
+			display: flex;
+			justify-content: space-between;
+			margin: 25px;
+		}
+		
+		.card {
+			box-shadow: 0 0 10px 5px grey;
+			flex: 0 1 45%;
+			padding: 10px;
+			border-radius: 15px;
+			text-align: center;
+			font-size: 20px;
+		}
+	</style>
 </head>
 <body>
+	<div class="header">
+		<h1>Vaccinator</h1>
+	</div>
+	
+	<div>
+		<?php
+			//var_dump($totalVac);
+
+			foreach($arrayReg as $key => $region) {
+				echo "Augmentation en " . $region . " de " . getIncrease($arrayVac, $key, "2021-01-12", date("Y-m-d")) . " vaccinations sur la dernière journée.<br>";
+			}
+
+		?>
+	</div>
+	
+	<div class="container">
+		<div class="card">
+			<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac["2021-01-13"];?></b></p>
+		</div>
+		
+		<div class="card">
+			<p>Pourcentage de la population vacciné : <b><?php echo round(($totalVac["2021-01-13"] / $population) * 100, 3); ?></b> %</p>
+		</div>
+	</div>
+	
+	<div class="container">
+		<div class="card">
+			<p>Nouvelles personnes vaccinées aujourd'hui : <b><?php echo getIncreaseDay($arrayVac, "2021-01-12", "2021-01-13"); ?></b></p>
+		</div>
+		
+		<div class="card">
+			<p>Moyenne sur 2 jours : <b><?php echo getAverage7Days($arrayVac, "2021-01-13"); ?></b></p>
+		</div>
+	</div>
+	
 	<div class="chart-container" style="position: relative; height:40vh; width:80vw">
 		<canvas id="myChart"></canvas>
 	</div>
@@ -135,9 +238,11 @@ var_dump($arrayVac);?>
 			data: {
 				labels: [
 					<?php 
-					foreach($totalVac as $date => $vac) {
-						echo "'" . $date . "',"; 
-						
+					$dateNow = DateTime::createFromFormat('Y-m-d', $dayLastData);
+					$dateNow->sub(new DateInterval('P2D'));
+					for($i = 0; $i < 7; $i++) {
+						echo "'" . $dateNow->format("d-m-Y") . "',"; 
+						$dateNow->add(new DateInterval('P1D'));
 					}?>
 					],
 				datasets: [
