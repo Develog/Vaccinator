@@ -153,7 +153,7 @@ function getAverage7Days($arrayVac, $now)
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
@@ -221,7 +221,7 @@ function getAverage7Days($arrayVac, $now)
 	
 	<div class="container">
 		<div class="card">
-			<p>Nouvelles personnes vaccinées aujourd'hui : <b><?php echo getIncreaseDay($arrayVac, $dayLastDataOneLess, $dayLastData); ?></b></p>
+			<p>Nouvelles personnes vaccinées le <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", DateTime::createFromFormat('Y-m-d', $dayLastData)->getTimestamp());?> : <b><?php echo getIncreaseDay($arrayVac, $dayLastDataOneLess, $dayLastData); ?></b></p>
 		</div>
 		
 		<div class="card">
