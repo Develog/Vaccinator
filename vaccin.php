@@ -34,6 +34,8 @@ $totalVac = [];
 $dateBegin = "2021-01-11";
 $newVacByDay = [];
 $dayLastData = end($vaccins)['date'];
+$dateLast = DateTime::createFromFormat('Y-m-d', $dayLastData);
+$dayLastDataOneLess = $dateLast->sub(new DateInterval('P1D'))->format('Y-m-d');
 
 
 $totalVac["2021-01-07"] = 45695;
@@ -201,7 +203,7 @@ function getAverage7Days($arrayVac, $now)
 			//var_dump($totalVac);
 
 			foreach($arrayReg as $key => $region) {
-				echo "Augmentation en " . $region . " de " . getIncrease($arrayVac, $key, "2021-01-12", date("Y-m-d")) . " vaccinations sur la dernière journée.<br>";
+				echo "Augmentation en " . $region . " de " . getIncrease($arrayVac, $key, $dayLastDataOneLess, $dayLastData) . " vaccinations sur la dernière journée.<br>";
 			}
 
 		?>
@@ -209,25 +211,25 @@ function getAverage7Days($arrayVac, $now)
 	
 	<div class="container">
 		<div class="card">
-			<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac["2021-01-13"];?></b></p>
+			<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac[$dayLastData];?></b></p>
 		</div>
 		
 		<div class="card">
-			<p>Pourcentage de la population vacciné : <b><?php echo round(($totalVac["2021-01-13"] / $population) * 100, 3); ?></b> %</p>
+			<p>Pourcentage de la population vacciné : <b><?php echo round(($totalVac[$dayLastData] / $population) * 100, 3); ?></b> %</p>
 		</div>
 	</div>
 	
 	<div class="container">
 		<div class="card">
-			<p>Nouvelles personnes vaccinées aujourd'hui : <b><?php echo getIncreaseDay($arrayVac, "2021-01-12", "2021-01-13"); ?></b></p>
+			<p>Nouvelles personnes vaccinées aujourd'hui : <b><?php echo getIncreaseDay($arrayVac, $dayLastDataOneLess, $dayLastData); ?></b></p>
 		</div>
 		
 		<div class="card">
-			<p>Moyenne sur 2 jours : <b><?php echo getAverage7Days($arrayVac, "2021-01-13"); ?></b></p>
+			<p>Moyenne sur 2 jours : <b><?php echo getAverage7Days($arrayVac, $dayLastData); ?></b></p>
 		</div>
 	</div>
 	
-	<div class="chart-container" style="position: relative; height:40vh; width:80vw">
+	<div class="chart-container" style="position: relative; height:40vh; width:100vw">
 		<canvas id="myChart"></canvas>
 	</div>
 	
