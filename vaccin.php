@@ -137,12 +137,12 @@ function getAverage7Days($arrayVac, $now)
 	$dateBegin = DateTime::createFromFormat('Y-m-d', $now); 
 	$dateBegin->sub(new DateInterval('P1D'));
 	
-	for($i = 0; $i < 2; $i++) {
+	for($i = 0; $i < 3; $i++) {
 		$total += getIncreaseDay($arrayVac, $dateBegin->format("Y-m-d"), $dateEnd->format("Y-m-d"));
 		$dateEnd->sub(new DateInterval('P1D'));
 		$dateBegin->sub(new DateInterval('P1D'));
 	}
-	return $total / 2;
+	return $total / 3;
 }
 
 //var_dump($newVacByDay);
@@ -177,10 +177,15 @@ function getAverage7Days($arrayVac, $now)
 			font-size: 36px;
 		}
 		
+		h2 {
+			text-align: center;
+			font-size: 30px;
+		}
+		
 		.container {
 			display: flex;
 			justify-content: space-between;
-			margin: 25px;
+			margin: 50px 5%;
 		}
 		
 		.card {
@@ -208,7 +213,7 @@ function getAverage7Days($arrayVac, $now)
 
 		?>
 	</div>
-	
+	<h2>France</h2>
 	<div class="container">
 		<div class="card">
 			<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac[$dayLastData];?></b></p>
@@ -229,6 +234,89 @@ function getAverage7Days($arrayVac, $now)
 		</div>
 	</div>
 	
+	<h2>Régions</h2>
+	<div class="container">
+		<div class="card">
+			<p>Ile de France</p>
+		</div>
+		
+		<div class="card">
+			<p>Auvergne-Rhône-Alpes</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Nouvelle-Aquitaine</p>
+		</div>
+		
+		<div class="card">
+			<p>Occitanie</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Provence-Alpes-Côte d'Azur</p>
+		</div>
+		
+		<div class="card">
+			<p>Pays de la Loire</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Bretagne</p>
+		</div>
+		
+		<div class="card">
+			<p>Normandie</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Centre-Val de Loire</p>
+		</div>
+		
+		<div class="card">
+			<p>Bourgogne-Franche-Comté</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Grand Est</p>
+		</div>
+		
+		<div class="card">
+			<p>Hauts-de-France</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Corse</p>
+		</div>
+		
+		<div class="card">
+			<p>La Réunion</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Mayotte</p>
+		</div>
+		
+		<div class="card">
+			<p>Guyane</p>
+		</div>
+	</div>
+	<div class="container">
+		<div class="card">
+			<p>Guadeloupe</p>
+		</div>
+		
+		<div class="card">
+			<p>Martinique</p>
+		</div>
+	</div>
+	
 	<div class="chart-container" style="position: relative; height:40vh; width:100vw">
 		<canvas id="myChart"></canvas>
 	</div>
@@ -241,7 +329,7 @@ function getAverage7Days($arrayVac, $now)
 				labels: [
 					<?php 
 					$dateNow = DateTime::createFromFormat('Y-m-d', $dayLastData);
-					$dateNow->sub(new DateInterval('P2D'));
+					$dateNow->sub(new DateInterval('P3D'));
 					for($i = 0; $i < 7; $i++) {
 						echo "'" . $dateNow->format("d-m-Y") . "',"; 
 						$dateNow->add(new DateInterval('P1D'));
