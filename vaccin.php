@@ -1,50 +1,5 @@
 <?php 
 
-/** TODO
- * Ajouter des espaces entre les nombres 1000 --> 1 000 sur toute la page. 
- * API twitter et compte twitter 
- * 
- */
-
-
-if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/735b0df8-51b4-4dd2-8a2d-8e46d77d60d8", "r")) !== FALSE) {
-	$row = 0;
-    while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
-		if($row > 0) {
-			$vaccinReg[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[3]); 
-		}
-        $row++;
-    }
-    fclose($handle);
-}
-
-$lastDayData = array_key_last($vaccinReg['IDF']);
-
-$dateBeginRecord = DateTime::createFromFormat("Y-m-d", "2020-12-27");
-$dateLastDataReg = DateTime::createFromFormat("Y-m-d", $lastDayData);
-$interval = $dateBeginRecord->diff($dateLastDataReg);
-$intervalDayStartAndLastData = $interval->format('%a');
-
-foreach($vaccinReg as $key => $region) {
-	$date = DateTime::createFromFormat("Y-m-d", "2020-12-27");
-	$lastData = 0;
-	for($i = 0; $i < $intervalDayStartAndLastData; $i++) {
-		if(!isset($region[$date->format("Y-m-d")])) {
-			$vaccinReg[$key][$date->format("Y-m-d")] = $lastData;
-		} else {
-			$lastData = $region[$date->format("Y-m-d")];
-		}
-		$date->add(new DateInterval("P1D"));
-	}
-}
-
-foreach($vaccinReg as $key => $region) {
-	ksort($region);
-	$vaccinReg[$key] = $region;
-}
-var_dump($vaccinReg);
-
-
 $vaccins = json_decode(file_get_contents("https://www.data.gouv.fr/fr/datasets/r/16cb2df5-e9c7-46ec-9dbf-c902f834dab1"), true);
 
 if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/6820ff9f-2dbb-4e87-8565-fcd7fa2dfa0f", "r")) !== FALSE) {
@@ -63,9 +18,6 @@ function convertCodeRegToStrReg($code)
 	switch($code){
 		case "1": 
 			return "GDP";
-			break;
-		case "2":
-			return "MAY";
 			break;
 		case "6": 
 			return "MTQ";
@@ -147,110 +99,6 @@ const POPULATION = 67063000;
 $population = 67063000;
 
 
-$deps = []; 
-$deps['01'] = ["name" => 'Ain']; 
-$deps['02'] = ["name" => 'Aisne']; 
-$deps['03'] = ["name" => 'Allier']; 
-$deps['04'] = ["name" => 'Alpes de Haute Provence']; 
-$deps['05'] = ["name" => 'Hautes Alpes']; 
-$deps['06'] = ["name" => 'Alpes Maritimes']; 
-$deps['07'] = ["name" => 'Ardèche']; 
-$deps['08'] = ["name" => 'Ardennes']; 
-$deps['09'] = ["name" => 'Ariège']; 
-$deps['10'] = ["name" => 'Aube']; 
-$deps['11'] = ["name" => 'Aude']; 
-$deps['12'] = ["name" => 'Aveyron']; 
-$deps['13'] = ["name" => 'Bouches du Rhône']; 
-$deps['14'] = ["name" => 'Calvados']; 
-$deps['15'] = ["name" => 'Cantal']; 
-$deps['16'] = ["name" => 'Charente']; 
-$deps['17'] = ["name" => 'Charente Maritime']; 
-$deps['18'] = ["name" => 'Cher']; 
-$deps['19'] = ["name" => 'Corrèze']; 
-$deps['2A'] = ["name" => 'Corse du Sud']; 
-$deps['2B'] = ["name" => 'Haute Corse']; 
-$deps['21'] = ["name" => 'Côte d\'Or']; 
-$deps['22'] = ["name" => 'Côtes d\'Armor']; 
-$deps['23'] = ["name" => 'Creuse']; 
-$deps['24'] = ["name" => 'Dordogne']; 
-$deps['25'] = ["name" => 'Doubs'];
-$deps['26'] = ["name" => 'Drôme']; 
-$deps['27'] = ["name" => 'Eure']; 
-$deps['28'] = ["name" => 'Eure et Loir']; 
-$deps['29'] = ["name" => 'Finistère']; 
-$deps['30'] = ["name" => 'Gard']; 
-$deps['31'] = ["name" => 'Haute Garonne']; 
-$deps['32'] = ["name" => 'Gers']; 
-$deps['33'] = ["name" => 'Gironde']; 
-$deps['34'] = ["name" => 'Hérault']; 
-$deps['35'] = ["name" => 'Ille et Vilaine']; 
-$deps['36'] = ["name" => 'Indre']; 
-$deps['37'] = ["name" => 'Indre et Loire']; 
-$deps['38'] = ["name" => 'Isère']; 
-$deps['39'] = ["name" => 'Jura']; 
-$deps['40'] = ["name" => 'Landes']; 
-$deps['41'] = ["name" => 'Loir et Cher']; 
-$deps['42'] = ["name" => 'Loire']; 
-$deps['43'] = ["name" => 'Haute Loire']; 
-$deps['44'] = ["name" => 'Loire Atlantique']; 
-$deps['45'] = ["name" => 'Loiret']; 
-$deps['46'] = ["name" => 'Lot']; 
-$deps['47'] = ["name" => 'Lot et Garonne']; 
-$deps['48'] = ["name" => 'Lozère']; 
-$deps['49'] = ["name" => 'Maine et Loire']; 
-$deps['50'] = ["name" => 'Manche']; 
-$deps['51'] = ["name" => 'Marne']; 
-$deps['52'] = ["name" => 'Haute Marne']; 
-$deps['53'] = ["name" => 'Mayenne']; 
-$deps['54'] = ["name" => 'Meurthe et Moselle']; 
-$deps['55'] = ["name" => 'Meuse']; 
-$deps['56'] = ["name" => 'Morbihan']; 
-$deps['57'] = ["name" => 'Moselle']; 
-$deps['58'] = ["name" => 'Nièvre']; 
-$deps['59'] = ["name" => 'Nord']; 
-$deps['60'] = ["name" => 'Oise']; 
-$deps['61'] = ["name" => 'Orne']; 
-$deps['62'] = ["name" => 'Pas de Calais']; 
-$deps['63'] = ["name" => 'Puy de Dôme']; 
-$deps['64'] = ["name" => 'Pyrénées Atlantiques']; 
-$deps['65'] = ["name" => 'Hautes Pyrénées']; 
-$deps['66'] = ["name" => 'Pyrénées Orientales']; 
-$deps['67'] = ["name" => 'Bas Rhin']; 
-$deps['68'] = ["name" => 'Haut Rhin']; 
-$deps['69'] = ["name" => 'Rhône-Alpes']; 
-$deps['70'] = ["name" => 'Haute Saône']; 
-$deps['71'] = ["name" => 'Saône et Loire']; 
-$deps['72'] = ["name" => 'Sarthe']; 
-$deps['73'] = ["name" => 'Savoie']; 
-$deps['74'] = ["name" => 'Haute Savoie']; 
-$deps['75'] = ["name" => 'Paris']; 
-$deps['76'] = ["name" => 'Seine Maritime']; 
-$deps['77'] = ["name" => 'Seine et Marne']; 
-$deps['78'] = ["name" => 'Yvelines']; 
-$deps['79'] = ["name" => 'Deux Sèvres']; 
-$deps['80'] = ["name" => 'Somme']; 
-$deps['81'] = ["name" => 'Tarn']; 
-$deps['82'] = ["name" => 'Tarn et Garonne']; 
-$deps['83'] = ["name" => 'Var']; 
-$deps['84'] = ["name" => 'Vaucluse']; 
-$deps['85'] = ["name" => 'Vendée']; 
-$deps['86'] = ["name" => 'Vienne']; 
-$deps['87'] = ["name" => 'Haute Vienne']; 
-$deps['88'] = ["name" => 'Vosges']; 
-$deps['89'] = ["name" => 'Yonne']; 
-$deps['90'] = ["name" => 'Territoire de Belfort']; 
-$deps['91'] = ["name" => 'Essonne']; 
-$deps['92'] = ["name" => 'Hauts de Seine']; 
-$deps['93'] = ["name" => 'Seine St Denis']; 
-$deps['94'] = ["name" => 'Val de Marne']; 
-$deps['95'] = ["name" => 'Val d\'Oise']; 
-$deps['971'] = ["name" => 'Guadeloupe']; 
-$deps['972'] = ["name" => 'Martinique']; 
-$deps['973'] = ["name" => 'Guyane']; 
-$deps['974'] = ["name" => 'Réunion']; 
-$deps['976'] = ["name" => 'Mayotte'];
-
-
 $arrayReg = [
 	"ARA" => ["name" => "Auvergne-Rhône-Alpes", "pop" => 8032400, "x" => 335, "y" => 365],
 	"BFC" => ["name" => "Bourgogne-Franche-Comté", "pop" => 2783000, "x" => 240, "y" => 375],
@@ -265,11 +113,11 @@ $arrayReg = [
 	"OCC" => ["name" => "Occitanie", "pop" => 5924900, "x" => 425, "y" => 275],	
 	"PLO" => ["name" => "Pays de la Loire", "pop" => 3801800, "x" => 225, "y" => 160],
 	"PAC" => ["name" => "Provence-Alpes-Côte d'Azur", "pop" => 5055700, "x" => 420, "y" => 420],
-	"GDP" => ["name" => "Guadeloupe", "pop" => 376900, "x" => 560, "y" => 145],
-	"GUY" => ["name" => "Guyane", "pop" => 290700, "x" => 560, "y" => 380],
-	"LRU" => ["name" => "La Réunion", "pop" => 860000, "x" => 560, "y" => 70],
-	"MTQ" => ["name" => "Martinique", "pop" => 358700, "x" => 560, "y" => 225],
-	"MAY" => ["name" => "Mayotte", "pop" => 279500, "x" => 560, "y" => 310]
+	"GDP" => ["name" => "Guadeloupe", "pop" => 376900, "x" => 555, "y" => 145],
+	"GUY" => ["name" => "Guyane", "pop" => 290700, "x" => 555, "y" => 380],
+	"LRU" => ["name" => "La Réunion", "pop" => 860000, "x" => 555, "y" => 70],
+	"MTQ" => ["name" => "Martinique", "pop" => 358700, "x" => 555, "y" => 225],
+	"MAY" => ["name" => "Mayotte", "pop" => 279500, "x" => 555, "y" => 310]
 ];
 
 
@@ -369,8 +217,7 @@ foreach($deliveries as $key => $delivery) {
 
 function getStringDate($now)
 {
-	//$dateBegin = DateTime::createFromFormat('Y-m-d', '2021-01-11');
-	$dateBegin = DateTime::createFromFormat('Y-m-d', '2020-01-27');
+	$dateBegin = DateTime::createFromFormat('Y-m-d', '2021-01-11');
 	$dateNow = DateTime::createFromFormat('Y-m-d', $now);
 	$diff = $dateNow->diff($dateBegin)->format("%d");
 	$strDate = "[";
@@ -457,7 +304,7 @@ function getNumberDayToFinishFrance($average, $totalVac, $now, $percent = 100)
 }
 
 
-function getColorRegion($arrayRegPerc, $reg, $color = "green")
+function getColorRegion($arrayRegPerc, $reg)
 {	
 	$min = 100;
 	$max = 0;
@@ -471,12 +318,13 @@ function getColorRegion($arrayRegPerc, $reg, $color = "green")
 	}
 
 	$diff = $max - $min;
-	$step = $diff / 10;
+	$step = $diff / 20;
 	$numberReg = $arrayRegPerc[$reg] - $min;
 	$res = $numberReg / $step;
-	$colorRes = 175 - (10 * $res);
+	$green = 175 - (5 * $res);
 
-	return 'rgb(0, '. $colorRes . ', 0)';
+
+	return 'rgb(0, '. $green . ', 0)';
 }
 
 function getColorDose($arrayPerc, $reg)
@@ -506,11 +354,22 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vaccinator</title>
+	<meta name="description" content="Comprendre l'évolution de la vaccination COVID19 en France grâce à des graphiques clairs et actualisés tous les jours."/>
+    <title>Vaccinator - La vaccination en France</title>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-0X86L9Z9GB"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'G-0X86L9Z9GB');
+	</script>
+	
 	<link rel="preconnect" href="https://fonts.gstatic.com">
 	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
-	<link rel="icon" href="syringe.svg" type="image/svg+xml"/>
+	<link rel="icon" href="vaccinator.svg" type="image/svg+xml"/>
 
 	<script src="vaccin.js"></script>
 	<link rel="stylesheet" href="style.css">
@@ -529,6 +388,8 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 	<button onclick="backToTop()" id="btn-top" title="Go to top"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6 0-33.9L207 39c9.4-9.4 24.6-9.4 33.9 0l194.3 194.3c9.4 9.4 9.4 24.6 0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3 0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></button>
 	<h4>Données issues de data.gouv.fr</h4>
 
+	<h4>Le gouvernement a changé sa façon de publier les données sur la vaccination, désormais elles sont à J-1, Vaccinator sera donc de nouveau mis à jour très prochainement ! Merci pour votre patience.</h4>
+
 	<div class="container">
 		<h2>France</h2>
 		<div class="grid-container">
@@ -537,7 +398,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			</div>
 			
 			<div class="grid-card">
-				<p>Pourcentage de la population vacciné : <b><?php echo round(($totalVac[$dayLastData] / $population) * 100, 3); ?></b> %</p>
+				<p>Pourcentage de la population vaccinée : <b><?php echo round(($totalVac[$dayLastData] / $population) * 100, 3); ?></b> %</p>
 			</div>
 
 			<div class="grid-card">
@@ -557,7 +418,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			</div>
 		</div>
 	</div>
-
+	
 	<div class="container">
 		<h2>Logistique des doses</h2>
 		<div class="grid-container g1">
@@ -569,7 +430,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			</div>
 		</div>
 	</div>
-
+	
 	<div class="container">
 		<h2>Nombre de vaccinés en France</h2>
 		<div class="chart-fr-container">
@@ -626,7 +487,6 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				?>
 			</svg>
 		</div>
-		
 		<div class="container">
 			<h2>Pourcentage de doses utilisées</h2>
 			<svg class="svg-map" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 640" width="500" height="500">
@@ -664,7 +524,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			</svg>
 		</div>
 	</div>
-
+	
 	<div class="container">
 		<h2>Régions</h2>
 		<div class="reg-list">
@@ -674,18 +534,16 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				}
 			?>
 		</div>
-		
-
 		<div class="grid-container">
 			<?php 
 			$dataChart = "";
 			foreach($arrayReg as $keyReg => $region) {
 				echo '<div class="grid-card" id="'. $keyReg .'">';
 					echo '<h3>'. $region['name'] . '</h3>';
-					foreach($vaccinReg as $key => $vaccin) {
+					foreach($arrayVac as $key => $vaccin) {
 						$dataChart = '[' . implode(',', $vaccin) . ']';
 						if($key === $keyReg) {
-							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dayLastData]), 3, ' ', true)) .'</b> personnes vaccinées<p>';						
+							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dayLastData]), 3, ' ', true)) .'</b> personnes vaccinées<p>';
 							echo '<p><b>'. round(($vaccin[$dayLastData] / $region['pop']) * 100, 3) .'</b> % de la population<p>';
 							echo "<p>Augmentation de <b>" . getIncrease($arrayVac, $key, $dayLastDataOneLess, $dayLastData) . "</b> vaccinations sur la dernière journée</p>";
 							echo "<p>Moyenne sur 7 jours : <b>" . getAverage7DaysReg($arrayVac, $dayLastData, $key) . "</b>";
@@ -703,6 +561,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			}?>
 		</div>
 	</div>
+	
 	
 	<div class="container">
 		<h2>Reste du monde</h2>
@@ -728,8 +587,6 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			}
 		}
 		?>
-
-
 
 		//Get the button
 		var btnTop = document.getElementById("btn-top");

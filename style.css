@@ -1,7 +1,6 @@
 body {
     margin: 0;
     font-family: 'Roboto';
-    color: #0d0d0d;
 }
 
 .header {
@@ -27,10 +26,6 @@ body {
 	text-decoration: underline;
 }
 
-.container {
-    margin: 50px 0;
-}
-
 h1 {
     margin: 0;
     font-size: 36px;
@@ -43,7 +38,7 @@ h1 {
 h2 {
     text-align: center;
     font-size: 30px;
-    margin: 5px;
+	margin: 5px;
 }
 
 h3 {
@@ -61,14 +56,13 @@ svg {
     fill: white;
 }
 
-
 .grid-container {
     display: grid;
     grid-row-gap: 40px;
     grid-template-columns: 45% 45%;
     align-content: space-between;
     justify-content: space-around;
-    margin-top: 20px;
+    margin-top: 50px;
 }
 
 .grid-card {
@@ -172,7 +166,7 @@ svg {
 
 .map-place {
 	display: block;
-	width: 40%;
+	width: 80%;
 	margin: auto;
 	height: 650px;
 }
@@ -183,17 +177,16 @@ svg {
     margin: auto;
 }
 
+.container {
+    margin: 50px 0;
+}
+
 #map-cor, #map-guy, #map-mtq, #map-lru, #map-gdp, #map-may {
-    fill: black !important;
+    fill: #102030 !important;
 }
 
 .grid-container.g1 {
-    display: grid;
-    grid-row-gap: 40px;
     grid-template-columns: 45%;
-    align-content: space-between;
-    justify-content: space-around;
-    margin-top: 20px;
 }
 
 .flex-container {
@@ -203,17 +196,17 @@ svg {
     flex-direction: row;
 }
 
+
 @media (max-width: 640px) {
     .grid-container {
-        display: grid;
-        grid-row-gap: 40px;
         grid-template-columns: 95%;
-        align-content: space-between;
-        justify-content: space-around;
-        margin-top: 20px;
     }
-
-    .flex-container {
+	
+	.grid-container.g1 {
+		grid-template-columns: 95%;
+	}
+	
+	.flex-container {
         flex-direction: column;
     }
 	
@@ -233,15 +226,16 @@ svg {
     .data-world {
         width: 100%;
     }
-
-    .map-place {
+	
+	.map-place {
         display: block;
         width: 95%;
         margin: auto;
         height: 450px;
     }
-
-    .svg-map {
-        width: 90%;
-    }
+	
+	.svg-map {
+		width: 90%;
+		height: 350px;
+	}
 }
