@@ -11,7 +11,9 @@ if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/735b0df8-51b4-4dd2-
 	$row = 0;
     while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
 		if($row > 0) {
-			$vaccinReg[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[3]); 
+			if($data[1] !== "2020-12-18" && $data[1] !== "2020-12-23") {
+				$vaccinReg[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[3]); 
+			}			
 		}
         $row++;
     }
@@ -22,8 +24,11 @@ $lastDayData = array_key_last($vaccinReg['IDF']);
 
 $dateBeginRecord = DateTime::createFromFormat("Y-m-d", "2020-12-27");
 $dateLastDataReg = DateTime::createFromFormat("Y-m-d", $lastDayData);
+$dateLastReg = DateTime::createFromFormat('Y-m-d', $lastDayData);
+$dateLastDataRegOneLess = $dateLastReg->sub(new DateInterval('P1D'))->format('Y-m-d');
 $interval = $dateBeginRecord->diff($dateLastDataReg);
 $intervalDayStartAndLastData = $interval->format('%a');
+$dateLastDataReg = $dateLastDataReg->format("Y-m-d");
 
 foreach($vaccinReg as $key => $region) {
 	$date = DateTime::createFromFormat("Y-m-d", "2020-12-27");
@@ -38,12 +43,23 @@ foreach($vaccinReg as $key => $region) {
 	}
 }
 
+
 foreach($vaccinReg as $key => $region) {
 	ksort($region);
 	$vaccinReg[$key] = $region;
 }
-var_dump($vaccinReg);
 
+unset($vaccinReg['']);
+
+foreach($vaccinReg as $key => $region) {
+	foreach($region as $date => $amount) {
+		if(isset($vaccinFrance[$date])) {
+			$vaccinFrance[$date] += $amount; 	
+		} else {
+			$vaccinFrance[$date] = $amount;
+		}
+	}
+}
 
 $vaccins = json_decode(file_get_contents("https://www.data.gouv.fr/fr/datasets/r/16cb2df5-e9c7-46ec-9dbf-c902f834dab1"), true);
 
@@ -497,7 +513,6 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 	}
 }
 
-
 ?>
 
 
@@ -533,27 +548,27 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<h2>France</h2>
 		<div class="grid-container">
 			<div class="grid-card">
-				<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac[$dayLastData];?></b></p>
+				<p>Nombre total de personnes vaccinées : <b><?php echo $vaccinFrance[$dateLastDataReg];?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Pourcentage de la population vacciné : <b><?php echo round(($totalVac[$dayLastData] / $population) * 100, 3); ?></b> %</p>
+				<p>Pourcentage de la population vacciné : <b><?php echo round(($vaccinFrance[$dateLastDataReg] / $population) * 100, 3); ?></b> %</p>
 			</div>
 
 			<div class="grid-card">
-				<p>Nouvelles personnes vaccinées le <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", DateTime::createFromFormat('Y-m-d', $dayLastData)->getTimestamp());?> : <b><?php echo getIncreaseDay($arrayVac, $dayLastDataOneLess, $dayLastData); ?></b></p>
+				<p>Nouvelles personnes vaccinées le <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", DateTime::createFromFormat('Y-m-d', $dateLastDataReg)->getTimestamp());?> : <b><?php echo getIncreaseDay($vaccinReg, $dateLastDataRegOneLess, $dateLastDataReg); ?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Moyenne sur 7 jours : <b><?php echo getAverage7Days($arrayVac, $dayLastData); ?></b></p>
+				<p>Moyenne sur 7 jours : <b><?php echo getAverage7Days($vaccinReg, $dateLastDataReg); ?></b></p>
 			</div>
 
 			<div class="grid-card">
-				<p>Date à laquelle les 60 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($arrayVac, $dayLastData), $totalVac[$dayLastData], $dayLastData, 60); ?></b></p>
+				<p>Date à laquelle les 60 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($vaccinReg, $dateLastDataReg), $vaccinFrance[$dateLastDataReg], $dateLastDataReg, 60); ?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($arrayVac, $dayLastData), $totalVac[$dayLastData], $dayLastData) ?></b></p>
+				<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($vaccinReg, $dateLastDataReg), $vaccinFrance[$dateLastDataReg], $dateLastDataReg) ?></b></p>
 			</div>
 		</div>
 	</div>
@@ -575,17 +590,17 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<div class="chart-fr-container">
 			<canvas id="chart_fr"></canvas>
 			<?php 
-				$dateBegin = DateTime::createFromFormat('Y-m-d', '2021-01-11');
-				$dateNow = DateTime::createFromFormat('Y-m-d', $dayLastData);
+				$dateBegin = DateTime::createFromFormat('Y-m-d', '2020-12-27');
+				$dateNow = DateTime::createFromFormat('Y-m-d', $dateLastDataReg);
 				$diff = $dateNow->diff($dateBegin)->format("%d");
 				$strData = "[";
 				for($i = 0; $i <= $diff; $i++) {
-					$strData .= "'" . $totalVac[$dateBegin->format('Y-m-d')] . "',";
+					$strData .= "'" . $vaccinFrance[$dateBegin->format('Y-m-d')] . "',";
 					$dateBegin->add(new DateInterval('P1D'));
 				}
 				$strData = substr($strData, 0, -1);
 				$strData .= "]";
-				echo '<script>createChartFrance("' . $strData . '", "' . getStringDate($dayLastData) . '");</script>';?>
+				echo '<script>createChartFrance("' . $strData . '", "' . getStringDate($dateLastDataReg) . '");</script>';?>
 		</div>
 	</div>
 	
@@ -615,9 +630,9 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				$arrayRegPerc = [];
 				foreach($arrayReg as $keyReg => $region) {
 					if(isset($region['x']) && isset($region['y'])) {
-						foreach($arrayVac as $key => $vaccin) {
+						foreach($vaccinReg as $key => $vaccin) {
 							if($key === $keyReg) {
-								$arrayRegPerc[$key] = round(($vaccin[$dayLastData] / $region['pop']) * 100, 3);
+								$arrayRegPerc[$key] = round(($vaccin[$dateLastDataReg] / $region['pop']) * 100, 3);
 								echo '<text class="text-svg" id="map-' . strtolower($key) . '" style="fill:white;" y="' . $region['x'] . '" x="' . $region['y'] . '">' . $arrayRegPerc[$key] . ' %</text>';
 							}
 						}
@@ -652,9 +667,9 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				$arrayRegDosePerc = [];
 				foreach($arrayReg as $keyReg => $region) {
 					if(isset($region['x']) && isset($region['y'])) {
-						foreach($arrayVac as $key => $vaccin) {
+						foreach($vaccinReg as $key => $vaccin) {
 							if($key === $keyReg) {
-								$arrayRegDosePerc[$key] = getPercentDoseUsed($arrayVac, $deliveriesReg, strtoupper($key), $dayLastData, $dayLastDataDelivery);
+								$arrayRegDosePerc[$key] = getPercentDoseUsed($vaccinReg, $deliveriesReg, strtoupper($key), $dateLastDataReg, $dayLastDataDelivery);
 								echo '<text class="text-svg" id="map-' . strtolower($key) . '" style="fill:white;" y="' . $region['x'] . '" x="' . $region['y'] . '">' . $arrayRegDosePerc[$key] . ' %</text>';
 							}
 						}
@@ -685,17 +700,17 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 					foreach($vaccinReg as $key => $vaccin) {
 						$dataChart = '[' . implode(',', $vaccin) . ']';
 						if($key === $keyReg) {
-							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dayLastData]), 3, ' ', true)) .'</b> personnes vaccinées<p>';						
-							echo '<p><b>'. round(($vaccin[$dayLastData] / $region['pop']) * 100, 3) .'</b> % de la population<p>';
-							echo "<p>Augmentation de <b>" . getIncrease($arrayVac, $key, $dayLastDataOneLess, $dayLastData) . "</b> vaccinations sur la dernière journée</p>";
-							echo "<p>Moyenne sur 7 jours : <b>" . getAverage7DaysReg($arrayVac, $dayLastData, $key) . "</b>";
+							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dateLastDataReg]), 3, ' ', true)) .'</b> personnes vaccinées<p>';						
+							echo '<p><b>'. round(($vaccin[$dateLastDataReg] / $region['pop']) * 100, 3) .'</b> % de la population<p>';
+							echo "<p>Augmentation de <b>" . getIncrease($vaccinReg, $key, $dateLastDataRegOneLess, $dateLastDataReg) . "</b> vaccinations sur la dernière journée</p>";
+							echo "<p>Moyenne sur 7 jours : <b>" . getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key) . "</b>";
 							echo "<p>Date à laquelle les 60 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours : <b>" 
-								. getNumberDayToFinish($region, getAverage7DaysReg($arrayVac, $dayLastData, $key), $vaccin, $dayLastData, 60) . "</b>";
+								. getNumberDayToFinish($region, getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key), $vaccin, $dateLastDataReg, 60) . "</b>";
 							echo "<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours : <b>" 
-								. getNumberDayToFinish($region, getAverage7DaysReg($arrayVac, $dayLastData, $key), $vaccin, $dayLastData) . "</b>";
+								. getNumberDayToFinish($region, getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key), $vaccin, $dateLastDataReg) . "</b>";
 							echo '<div class="chart-reg-container" style="position: relative; width:80%;">';
 								echo '<canvas id="chart_' . $key . '"></canvas>';
-								echo '<script>createChart("'. $key . '", "'. $dataChart .'", "'. getStringDate($dayLastData) . '");</script>';
+								echo '<script>createChart("'. $key . '", "'. $dataChart .'", "'. getStringDate($dateLastDataReg) . '");</script>';
 							echo '</div>';
 						}
 					}
