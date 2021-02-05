@@ -101,6 +101,7 @@ svg {
     border-radius: 5px;
     text-align: center;
     line-height: 40px;
+    cursor: pointer;
 }
 
 #btn-top {
@@ -156,7 +157,8 @@ svg {
 }
 
 .chart-reg-container {
-	margin: 20px auto auto auto;
+    margin: 20px auto auto auto;
+    height: 520px;
 }
 
 .chart-fr-container {
@@ -196,12 +198,43 @@ svg {
     margin-top: 20px;
 }
 
-.flex-container {
+.flex-container{
 	display: flex;
 	align-items: center;
     justify-content: space-around;
     flex-direction: row;
 }
+
+.flex-container.region-card{
+	display: flex;
+	align-items: center;
+    justify-content: space-around;
+    flex-direction: row;
+    min-height: 650px;
+    margin: 20px 2.5% 0px 2.5%;
+}
+
+.grid-card.reg {
+    display: none;
+    width: 85%;
+}
+
+.reg-data {
+    display: flex;
+}
+
+.text-data {
+    flex: 1 0 60%;
+}
+
+.chart-data {
+    flex: 1 0 40%;
+}
+
+.pie {
+    width: 30%;
+}
+
 
 @media (max-width: 640px) {
     .grid-container {
@@ -211,6 +244,14 @@ svg {
         align-content: space-between;
         justify-content: space-around;
         margin-top: 20px;
+    }
+
+    .grid-container.g1{
+        grid-template-columns: 95%;
+    }
+
+    .reg-data {
+        flex-direction: column;
     }
 
     .flex-container {
@@ -242,6 +283,10 @@ svg {
     }
 
     .svg-map {
-        width: 90%;
+        width: 100%;
+    }
+
+    .chart-reg-container {
+        height: max-content;
     }
 }
