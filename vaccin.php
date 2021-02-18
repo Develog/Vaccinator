@@ -1,17 +1,274 @@
 <?php 
 
-$vaccins = json_decode(file_get_contents("https://www.data.gouv.fr/fr/datasets/r/16cb2df5-e9c7-46ec-9dbf-c902f834dab1"), true);
+include "second_dose.php";
+include "deliveries.php";
+include "departements.php";
 
-if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/6820ff9f-2dbb-4e87-8565-fcd7fa2dfa0f", "r")) !== FALSE) {
+$arrayReg = [
+	"ARA" => ["name" => "Auvergne-Rhône-Alpes", "pop" => 8092598, "x" => 335, "y" => 365, "deps" => ["42", "03", "63", "15", "01", "73", "07", "26", "38", "43", "74", "69"]], //84
+	"BFC" => ["name" => "Bourgogne-Franche-Comté", "pop" => 2786205, "x" => 240, "y" => 375, "deps" => ["21", "25", "58", "90", "71", "39", "89", "70"]], //27
+	"BRE" => ["name" => "Bretagne", "pop" => 3371297, "x" => 190, "y" => 90, "deps" => ["35", "29", "22", "56"]],  //53
+	"CVL" => ["name" => "Centre Val de Loire", "pop" => 2562431, "x" => 225, "y" => 260, "deps" => ["28", "45", "36", "18", "37", "41"]], //24
+	"COR" => ["name" => "Corse", "pop" => 349273, "x" => 515, "y" => 500, "deps" => ["2A", "2B"]], 
+	"GES" => ["name" => "Grand Est", "pop" => 5524817, "x" => 155, "y" => 400, "deps" => ["54", "08", "52", "57", "55", "68", "10", "88", "67", "51"]], //44
+	"HDF" => ["name" => "Haut de France", "pop" => 5977462, "x" => 95, "y" => 300, "deps" => ["02", "80", "59", "62", "60"]], //32 
+	"IDF" => ["name" => "Ile de France", "pop" => 12326429, "x" => 155, "y" => 290, "deps" => ["95", "93", "77", "91", "75", "92", "94", "78"]], //11
+	"NMD" => ["name" => "Normandie", "pop" => 3306092, "x" => 140, "y" => 195, "deps" => ["14", "76", "27", "61", "50"]], //28
+	"NAQ" => ["name" => "Nouvelle-Aquitaine", "pop" => 6039767, "x" => 340, "y" => 210, "deps" => ["17", "24", "19", "79", "86", "47", "40", "64", "33", "16", "23", "87"]], // 75
+	"OCC" => ["name" => "Occitanie", "pop" => 5985751, "x" => 425, "y" => 275, "deps" => ["65", "81", "09", "11", "12", "48", "46", "32", "82", "31", "34", "66", "30"]],	//76
+	"PLO" => ["name" => "Pays de la Loire", "pop" => 3838060, "x" => 225, "y" => 160, "deps" => ["85", "49", "72", "53", "44"]], //52
+	"PAC" => ["name" => "Provence-Alpes-Côte d'Azur", "pop" => 5089661, "x" => 420, "y" => 420, "deps" => ["06", "04", "83", "05", "13", "84"]], //93
+	"GDP" => ["name" => "Guadeloupe", "pop" => 375857, "x" => 555, "y" => 145, "deps" => ["971"]],
+	"GUY" => ["name" => "Guyane", "pop" => 294071, "x" => 555, "y" => 380, "deps" => ["973"]],
+	"LRU" => ["name" => "La Réunion", "pop" => 858450, "x" => 555, "y" => 70, "deps" => ["974"]],
+	"MTQ" => ["name" => "Martinique", "pop" => 355094, "x" => 555, "y" => 225, "deps" => ["972"]],
+	"MAY" => ["name" => "Mayotte", "pop" => 288926, "x" => 555, "y" => 310, "deps" => ["976"]]
+];
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/735b0df8-51b4-4dd2-8a2d-8e46d77d60d8", "r")) !== FALSE) {
 	$row = 0;
-    while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 		if($row > 0) {
-			$deliveries[$data[2]][$data[3]] = $data[1]; 
+			$vaccinReg[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[2]); 
+			if($data[1] !== "2020-12-18" && $data[1] !== "2020-12-23") {
+				$vaccinReg[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[2]); 
+			}			
 		}
         $row++;
     }
     fclose($handle);
 }
+
+if (($handle = fopen("second.csv", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			$vaccinSecondFrance[$data[0]] = intval($data[1]); 
+		}
+        $row++;
+    }
+    fclose($handle);
+}
+
+$lastDayData = array_key_last($vaccinReg['IDF']);
+
+$dateBeginRecord = DateTime::createFromFormat("Y-m-d", "2020-12-27");
+$dateLastDataReg = DateTime::createFromFormat("Y-m-d", $lastDayData);
+$dateLastReg = DateTime::createFromFormat('Y-m-d', $lastDayData);
+$dateLastDataRegOneLess = $dateLastReg->sub(new DateInterval('P1D'))->format('Y-m-d');
+$interval = $dateBeginRecord->diff($dateLastDataReg);
+$intervalDayStartAndLastData = $interval->format('%a');
+$dateLastDataReg = $dateLastDataReg->format("Y-m-d");
+
+foreach($vaccinReg as $key => $region) {
+	$date = DateTime::createFromFormat("Y-m-d", "2020-12-27");
+	for($i = 0; $i < $intervalDayStartAndLastData; $i++) {
+		if(!isset($region[$date->format("Y-m-d")])) {
+			$vaccinReg[$key][$date->format("Y-m-d")] = 0;
+		}
+		$date->add(new DateInterval("P1D"));
+	}
+}
+
+if(!isset($vaccinSecondFrance[$dateLastDataReg])) {
+	$handleSecond = fopen("second.csv", "a");
+	if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/131c6b39-51b5-40a7-beaa-0eafc4b88466", "r")) !== FALSE) {
+		$row = 0;
+		while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+			if($row > 0) {
+				$vaccinSecondFrance[$dateLastDataReg] = $data[3];
+				fputcsv($handleSecond, array($data[1], $data[3]), ',', '"');
+				fclose($handleSecond);
+			}
+			$row++;
+		}
+		fclose($handle);
+	}        
+}
+
+
+foreach($vaccinReg as $key => $region) {
+	ksort($region);
+	$vaccinReg[$key] = $region;
+}
+unset($vaccinReg['']);
+
+$totalVacFrance = 0;
+foreach($vaccinReg as $key => $region) {
+	$cumul = 0;
+	foreach($region as $date => $amount) {
+		$cumul += $amount;
+		$vaccinReg[$key][$date] = $cumul;
+		if(isset($vaccinFrance[$date])) {
+			$vaccinFrance[$date] += $amount; 	
+		} else {
+			$vaccinFrance[$date] = $amount;
+		}
+		$totalVacFrance += $amount; 
+	}
+}
+
+
+$vaccins = json_decode(file_get_contents("https://www.data.gouv.fr/fr/datasets/r/16cb2df5-e9c7-46ec-9dbf-c902f834dab1"), true);
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/c04da7da-be58-450e-bf3e-5993ce7796d9", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {		
+			$deliveries[$data[0]][$data[3]] = $data[2]; 		
+		}
+        $row++;
+    }
+    fclose($handle);
+}
+
+$totalFranceDeliveries = getLastDataFrance($deliveries, "Moderna") + getLastDataFrance($deliveries, "Pfizer");
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/131c6b39-51b5-40a7-beaa-0eafc4b88466", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			$vaccinFirst = $data[2];
+			$vaccinSecond = $data[3]; 		
+		}
+        $row++;
+    }
+    fclose($handle);
+}
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/104f3ab1-de0f-41c5-9bd8-edab9926882c", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			if($data[1] != 0) {
+				$vaccinTotalRes['first']['cumul'] = intval($data[2]); 
+				$vaccinTotalRes['first']['percent'] = intval($data[4]); 
+				$vaccinTotalRes['second']['cumul'] = intval($data[3]);
+				$vaccinTotalRes['second']['percent'] = round($data[3] / ($data[2] / $data[4]), 1); 
+			}
+		}
+        $row++;
+    }
+	fclose($handle);
+}
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/2dadbaa7-02ae-43df-92bb-53a82e790cb2", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			if($data[1] != 0) {
+				$vaccinTotalRegAge[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[3]); 
+			}
+		}
+        $row++;
+    }
+	fclose($handle);
+}
+
+//Age --> 0 (tous âges) / 9 / 17 (10-17) / 24 (18-24) / 29 (25-29) / 39 / 49 / 59 (50-59) / 64 (60-64) / 69 (65-69) / 74 (70-74) / 79 (75-79) / 80 (80 et plus)
+$arrayAge = [9, 17, 24, 29, 39, 49, 59, 64, 69, 74, 79, 80];
+
+foreach($vaccinTotalRegAge as $region => $vaccin) {
+	foreach($arrayAge as $age) {
+		if(!key_exists($age, $vaccin)) {
+			$vaccinTotalRegAge[$region][$age] = 0;
+		}
+	}
+	ksort($vaccinTotalRegAge[$region]);
+}
+unset($vaccinTotalRegAge['']);
+
+
+//Classe pour le pourcentage de la pop vaccinée : 
+//0 => 0-24 / 1 => 25-49 / 2 => 50 - 65 / 3 => 65-74 / 4 => 75 +
+$populationAge[0] = 19954955; // 19 954 955
+$populationAge[1] = 20551273; // 20 551 273
+$populationAge[2] = 12939673; // 12 939 673
+$populationAge[3] = 7556086;  // 7 556 086
+$populationAge[4] = 6420254;  // 6 420 254
+
+/**key 
+ * = 9/17/24 --> 0-24 ans
+ * = 29/39/49 --> 25-49 ans
+ * = 59/64 --> 50-64 ans
+ * = 69/74 --> 65-74 ans
+ * = 79/80 --> 75+ ans
+ * */
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/dc103057-d933-4e4b-bdbf-36d312af9ca9", "r")) !== FALSE) {
+	$vaccinTotalAge = [];
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			if($data[1] != 0) {
+				if($data[1] == 9 || $data[1] == 17 || $data[1] == 24) {
+					if(isset($vaccinTotalAge[0])) {
+						$vaccinTotalAge[0]['first'] += intval($data[3]); 
+						$vaccinTotalAge[0]['second'] += intval($data[4]); 
+					} else {
+						$vaccinTotalAge[0]['first'] = intval($data[3]); 
+						$vaccinTotalAge[0]['second'] = intval($data[4]); 
+					}					
+				} else if($data[1] == 29 || $data[1] == 39 || $data[1] == 39) {
+					if(isset($vaccinTotalAge[1])) {
+						$vaccinTotalAge[1]['first'] += intval($data[3]); 
+						$vaccinTotalAge[1]['second'] += intval($data[4]);  
+					} else {
+						$vaccinTotalAge[1]['first'] = intval($data[3]); 
+						$vaccinTotalAge[1]['second'] = intval($data[4]);  
+					}
+				} else if($data[1] == 59 || $data[1] == 64) {
+					if(isset($vaccinTotalAge[2])) {
+						$vaccinTotalAge[2]['first'] += intval($data[3]); 
+						$vaccinTotalAge[2]['second'] += intval($data[4]);
+					} else {
+						$vaccinTotalAge[2]['first'] = intval($data[3]); 
+						$vaccinTotalAge[2]['second'] = intval($data[4]);
+					}					 
+				} else if($data[1] == 69 || $data[1] == 74) {
+					if(isset($vaccinTotalAge[3])) {
+						$vaccinTotalAge[3]['first'] += intval($data[3]); 
+						$vaccinTotalAge[3]['second'] += intval($data[4]); 
+					} else {
+						$vaccinTotalAge[3]['first'] = intval($data[3]); 
+						$vaccinTotalAge[3]['second'] = intval($data[4]); 
+					}
+				} else if($data[1] == 79 || $data[1] == 80) {
+					if(isset($vaccinTotalAge[4])) {
+						$vaccinTotalAge[4]['first'] += intval($data[3]); 
+						$vaccinTotalAge[4]['second'] += intval($data[4]); 
+					} else {
+						$vaccinTotalAge[4]['first'] = intval($data[3]); 
+						$vaccinTotalAge[4]['second'] = intval($data[4]); 
+					}					
+				}				
+			}
+		}
+        $row++;
+    }
+	fclose($handle);
+}
+ksort($vaccinTotalAge);
+
+
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/d302c60b-cb7d-48cd-91f0-a3baee4bcf05", "r")) !== FALSE) {
+	$row = 0;
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		if($row > 0) {
+			if($data[1] != 0) {
+				$vaccinTotalRegSexe[convertCodeRegToStrReg($data[0])][$data[1]] = intval($data[3]); 
+			}
+		}
+        $row++;
+    }
+	fclose($handle);
+}
+
 
 function convertCodeRegToStrReg($code)
 {
@@ -19,7 +276,7 @@ function convertCodeRegToStrReg($code)
 		case "1": 
 			return "GDP";
 			break;
-		case "6": 
+		case "2": 
 			return "MTQ";
 			break;
 		case "3": 
@@ -27,6 +284,9 @@ function convertCodeRegToStrReg($code)
 			break;
 		case "4": 
 			return "LRU";
+			break;
+		case "6":
+			return "MAY";
 			break;
 		case "11": 
 			return "IDF";
@@ -70,20 +330,21 @@ function convertCodeRegToStrReg($code)
 	}
 }
 
-if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/c3f04527-2d19-4476-b02c-0d86b5a9d3da", "r")) !== FALSE) {
+if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/1e8890a0-89c0-474f-88a1-d79414911059", "r")) !== FALSE) {
 	$row = 0;
-    while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 		if($row > 0) {
-			$deliveriesReg[convertCodeRegToStrReg($data[0])][strtolower($data[4])][$data[5]] = ["flask" => intval($data[2]), "dose" => intval($data[3])];
-			if(isset($deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["flask"])) {
-				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["flask"] += intval($data[2]);
+			$deliveriesReg[convertCodeRegToStrReg($data[0])][strtolower($data[2])][$data[3]] = ["flask" => intval($data[4]), "dose" => intval($data[5])];
+
+			if(isset($deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["flask"])) {
+				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["flask"] += intval($data[5]);
 			} else {
-				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["flask"] = intval($data[2]);
+				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["flask"] = intval($data[5]);
 			}
-			if(isset($deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["dose"])) {
-				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["dose"] += intval($data[3]);
+			if(isset($deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["dose"])) {
+				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["dose"] += intval($data[5]);
 			} else {
-				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[5]]["dose"] = intval($data[3]);
+				$deliveriesReg[convertCodeRegToStrReg($data[0])]["total"][$data[3]]["dose"] = intval($data[5]);
 			}
 		}
         $row++;
@@ -95,30 +356,8 @@ $arrayVac = [];
 $nbrRegion = 0;
 $valueDay = 0;
 
-const POPULATION = 67063000;
-$population = 67063000;
-
-
-$arrayReg = [
-	"ARA" => ["name" => "Auvergne-Rhône-Alpes", "pop" => 8032400, "x" => 335, "y" => 365],
-	"BFC" => ["name" => "Bourgogne-Franche-Comté", "pop" => 2783000, "x" => 240, "y" => 375],
-	"BRE" => ["name" => "Bretagne", "pop" => 3340400, "x" => 190, "y" => 90], 
-	"CVL" => ["name" => "Centre Val de Loire", "pop" => 2559100, "x" => 225, "y" => 260],
-	"COR" => ["name" => "Corse", "pop" => 344700, "x" => 515, "y" => 500],
-	"GES" => ["name" => "Grand Est", "pop" => 5511700, "x" => 155, "y" => 400],
-	"HDF" => ["name" => "Haut de France", "pop" => 5962700, "x" => 95, "y" => 300],
-	"IDF" => ["name" => "Ile de France", "pop" => 12278200, "x" => 155, "y" => 290],
-	"NMD" => ["name" => "Normandie", "pop" => 3303500, "x" => 140, "y" => 195],
-	"NAQ" => ["name" => "Nouvelle-Aquitaine", "pop" => 6000000, "x" => 340, "y" => 210],
-	"OCC" => ["name" => "Occitanie", "pop" => 5924900, "x" => 425, "y" => 275],	
-	"PLO" => ["name" => "Pays de la Loire", "pop" => 3801800, "x" => 225, "y" => 160],
-	"PAC" => ["name" => "Provence-Alpes-Côte d'Azur", "pop" => 5055700, "x" => 420, "y" => 420],
-	"GDP" => ["name" => "Guadeloupe", "pop" => 376900, "x" => 555, "y" => 145],
-	"GUY" => ["name" => "Guyane", "pop" => 290700, "x" => 555, "y" => 380],
-	"LRU" => ["name" => "La Réunion", "pop" => 860000, "x" => 555, "y" => 70],
-	"MTQ" => ["name" => "Martinique", "pop" => 358700, "x" => 555, "y" => 225],
-	"MAY" => ["name" => "Mayotte", "pop" => 279500, "x" => 555, "y" => 310]
-];
+const POPULATION = 67422241;
+$population = 67422241; // 67 422 241
 
 
 $total = 0;
@@ -129,7 +368,7 @@ $dayLastData = end($vaccins)['date'];
 $dateLast = DateTime::createFromFormat('Y-m-d', $dayLastData);
 $dayLastDataOneLess = $dateLast->sub(new DateInterval('P1D'))->format('Y-m-d');
 
-$dayLastDataDelivery = key(end($deliveries));
+$dayLastDataDelivery = array_key_last(end($deliveries));
 $dateLastDelivery = DateTime::createFromFormat('Y-m-d', $dayLastDataDelivery);
 
 $totalVac["2021-01-07"] = 45695;
@@ -210,16 +449,17 @@ foreach($vaccins as $vaccin) {
 	$totalVac[$vaccin['date']] += $vaccin['totalVaccines'];
 }
 
+/*
 $totalFranceDeliveries = 0;
 foreach($deliveries as $key => $delivery) {
 	$totalFranceDeliveries += $delivery[$dayLastDataDelivery];
-}
+}*/
 
 function getStringDate($now)
 {
-	$dateBegin = DateTime::createFromFormat('Y-m-d', '2021-01-11');
+	$dateBegin = DateTime::createFromFormat('Y-m-d', '2020-12-27');
 	$dateNow = DateTime::createFromFormat('Y-m-d', $now);
-	$diff = $dateNow->diff($dateBegin)->format("%d");
+	$diff = $dateNow->diff($dateBegin)->days;
 	$strDate = "[";
 	for($i = 0; $i <= $diff; $i++) {
 		$strDate .= "'" . $dateBegin->format('d-m-Y') . "',";
@@ -232,7 +472,11 @@ function getStringDate($now)
 
 function getIncrease($arrayVac, $id, $begin, $end) 
 {
-	return $arrayVac[$id][$end] - $arrayVac[$id][$begin];
+	if(isset($arrayVac[$id][$end]) && isset($arrayVac[$id][$begin])) {
+		return $arrayVac[$id][$end] - $arrayVac[$id][$begin];
+	} else {
+		return 0;
+	}	
 }
 
 function getIncreaseDay($arrayVac, $begin, $end)
@@ -251,12 +495,12 @@ function getAverage7Days($arrayVac, $now)
 	$dateBegin = DateTime::createFromFormat('Y-m-d', $now); 
 	$dateBegin->sub(new DateInterval('P1D'));
 	
-	for($i = 0; $i < 6; $i++) {
-		$total += getIncreaseDay($arrayVac, $dateBegin->format("Y-m-d"), $dateEnd->format("Y-m-d"));
+	for($i = 0; $i < 7; $i++) {
+		$total += $arrayVac[$dateBegin->format("Y-m-d")];
 		$dateEnd->sub(new DateInterval('P1D'));
 		$dateBegin->sub(new DateInterval('P1D'));
 	}
-	return round($total / 6);
+	return round($total / 7);
 }
 
 function getAverage7DaysReg($array, $now, $reg)
@@ -266,12 +510,12 @@ function getAverage7DaysReg($array, $now, $reg)
 	$dateBegin = DateTime::createFromFormat('Y-m-d', $now); 
 	$dateBegin->sub(new DateInterval('P1D'));
 	
-	for($i = 0; $i < 6; $i++) {
+	for($i = 0; $i < 7; $i++) {
 		$total += getIncrease($array, $reg, $dateBegin->format("Y-m-d"), $dateEnd->format("Y-m-d"));
 		$dateEnd->sub(new DateInterval('P1D'));
 		$dateBegin->sub(new DateInterval('P1D'));
 	}
-	return round($total / 6);
+	return round($total / 7);
 }
 
 function getNumberDayToFinish($region, $average, $vaccins, $now, $percent = 100)
@@ -332,19 +576,28 @@ function getColorDose($arrayPerc, $reg)
 	$res = $arrayPerc[$reg] / 5;
 	$green = 200 - (10 * $res);
 	$red = 0 + (10 * $res);
-	return 'rgb('. $red . ', ' . $green . ', 0)';
+	if($red <= 255) {
+		return 'rgb('. $red . ', ' . $green . ', 0)';
+	} else {
+		return 'rgb(255, ' . $green . ', 0)';
+	}	
 }
 
 
 function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayLastDataDelivery)
 {
-	if($reg !== "MAY") {
-		return round(($arrayVac[$reg][$dayLastData] / $deliveriesReg[$reg]['total'][$dayLastDataDelivery]['dose']) * 100, 2);
-	} else {
-		return 0;
+	$dateLastData = DateTime::createFromFormat("Y-m-d", $dayLastData);
+	while(!isset($arrayVac[$reg][$dateLastData->format('Y-m-d')])) {
+		$dateLastData->sub(new DateInterval('P1D'));
 	}
+	$dateLastData = $dateLastData->format("Y-m-d");
+	return round(($arrayVac[$reg][$dateLastData] / getLastDataReg($deliveriesReg, $reg)) * 100, 2);
 }
 
+function formatNumber($number)
+{
+	return strrev(wordwrap(strrev($number), 3, ' ', true));
+}
 
 ?>
 
@@ -388,33 +641,53 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 	<button onclick="backToTop()" id="btn-top" title="Go to top"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6 0-33.9L207 39c9.4-9.4 24.6-9.4 33.9 0l194.3 194.3c9.4 9.4 9.4 24.6 0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3 0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></button>
 	<h4>Données issues de data.gouv.fr</h4>
 
-	<h4>Le gouvernement a changé sa façon de publier les données sur la vaccination, désormais elles sont à J-1, Vaccinator sera donc de nouveau mis à jour très prochainement ! Merci pour votre patience.</h4>
+	<h4>Les données issues du système d’information Vaccin Covid permettent de dénombrer en temps quasi réel (J-1), 
+	le nombre de personnes ayant reçu une injection de vaccin anti-covid.</h4>
 
 	<div class="container">
 		<h2>France</h2>
 		<div class="grid-container">
 			<div class="grid-card">
-				<p>Nombre total de personnes vaccinées : <b><?php echo $totalVac[$dayLastData];?></b></p>
+				<p><b>Nombre total de doses administrées :</b></p>
+				<p>1 dose : <b><?php echo formatNumber($vaccinFirst);?></b></p>
+				<p>2 doses : <b><?php echo formatNumber($vaccinSecond);?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Pourcentage de la population vaccinée : <b><?php echo round(($totalVac[$dayLastData] / $population) * 100, 3); ?></b> %</p>
+				<p><b>Pourcentage de la population vaccinée :</b></p>
+				<p>1 dose : <b><?php echo round(($vaccinFirst / $population) * 100, 3); ?></b> %</p>
+				<p>2 doses : <b><?php echo round(($vaccinSecond / $population) * 100, 3); ?></b> %</p>
+				
 			</div>
 
 			<div class="grid-card">
-				<p>Nouvelles personnes vaccinées le <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", DateTime::createFromFormat('Y-m-d', $dayLastData)->getTimestamp());?> : <b><?php echo getIncreaseDay($arrayVac, $dayLastDataOneLess, $dayLastData); ?></b></p>
+				<p>Nombre de doses administrées le <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", DateTime::createFromFormat('Y-m-d', $dateLastDataReg)->getTimestamp());?> 
+				: <b><?php echo formatNumber($vaccinFrance[$dateLastDataReg] + getIncreaseSecond($vaccinSecondFrance, $dateLastDataRegOneLess, $dateLastDataReg)); ?></b></p>
+				<p>1ère dose : <b><?php echo formatNumber($vaccinFrance[$dateLastDataReg]); ?></b></p>
+				<p>2nde dose : <b><?php echo formatNumber(getIncreaseSecond($vaccinSecondFrance, $dateLastDataRegOneLess, $dateLastDataReg)); ?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Moyenne sur 7 jours : <b><?php echo getAverage7Days($arrayVac, $dayLastData); ?></b></p>
+				<p>Moyenne sur 7 jours de doses administrées : <b><?php echo formatNumber(getAverage7Days($vaccinFrance, $dateLastDataReg) + getAverageLast7DaySecond($vaccinSecondFrance, $dateLastDataReg));?></b></p>
+				<p>1ère dose : <b><?php echo formatNumber(getAverage7Days($vaccinFrance, $dateLastDataReg)); ?></b></p>
+				<p>2nde dose : <b><?php echo formatNumber(getAverageLast7DaySecond($vaccinSecondFrance, $dateLastDataReg)); ?></b></p>
 			</div>
 
 			<div class="grid-card">
-				<p>Date à laquelle les 60 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($arrayVac, $dayLastData), $totalVac[$dayLastData], $dayLastData, 60); ?></b></p>
+				<p>Date à laquelle les 70 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours (1ère dose) : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($vaccinFrance, $dateLastDataReg), $vaccinFrance[$dateLastDataReg], $dateLastDataReg, 70); ?></b></p>
 			</div>
 			
 			<div class="grid-card">
-				<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($arrayVac, $dayLastData), $totalVac[$dayLastData], $dayLastData) ?></b></p>
+				<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours (1ère dose) : <b><?php echo getNumberDayToFinishFrance(getAverage7Days($vaccinFrance, $dateLastDataReg), $vaccinFrance[$dateLastDataReg], $dateLastDataReg) ?></b></p>
+			</div>
+		</div>
+
+		<div class="grid-container g1">
+			<div class="grid-card">
+				<p><b>Vaccination en EPHAD et USLD :</b></p>
+				<p><i>Les chiffres peuvent être éronnés, notamment en cas d’erreur de codage du lieu de vaccination dans Vaccin Covid.</i></p>
+				<p>Couverture 1ère dose : <b><?php echo $vaccinTotalRes['first']['percent']?></b> %</p>
+				<p>Couverture 2nde dose : <b><?php echo $vaccinTotalRes['second']['percent']?></b> %</p>
 			</div>
 		</div>
 	</div>
@@ -423,10 +696,10 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<h2>Logistique des doses</h2>
 		<div class="grid-container g1">
 			<div class="grid-card">
-				<p>Livraison de doses au <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", $dateLastDelivery->getTimestamp());?> : <b><?php echo $totalFranceDeliveries;?></b></p>
-				<p>Pfizer : <b><?php echo $deliveries["Pfizer"][$dayLastDataDelivery]; ?></b></p>
-				<p>Moderna : <b><?php echo $deliveries["Moderna"][$dayLastDataDelivery]; ?></b></p>
-				<p>Pourcentage des doses utilisées : <b><?php echo round(($totalVac[$dayLastData] / $totalFranceDeliveries) * 100, 3);?> </b> %</p>
+				<p>Livraison de doses au <?php setlocale (LC_TIME, 'fr_FR.utf8','fra');  echo strftime("%d %B %Y", $dateLastDelivery->getTimestamp());?> : <b><?php echo formatNumber($totalFranceDeliveries);?></b></p>
+				<p>Pfizer : <b><?php echo formatNumber(getLastDataFrance($deliveries, "Pfizer")); ?></b></p>
+				<p>Moderna : <b><?php echo formatNumber(getLastDataFrance($deliveries, "Moderna")); ?></b></p>
+				<p>Pourcentage des doses utilisées : <b><?php echo round((($vaccinFirst + $vaccinSecond) / $totalFranceDeliveries) * 100, 3);?> </b> %</p>
 			</div>
 		</div>
 	</div>
@@ -436,17 +709,36 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<div class="chart-fr-container">
 			<canvas id="chart_fr"></canvas>
 			<?php 
-				$dateBegin = DateTime::createFromFormat('Y-m-d', '2021-01-11');
-				$dateNow = DateTime::createFromFormat('Y-m-d', $dayLastData);
-				$diff = $dateNow->diff($dateBegin)->format("%d");
+				$dateBegin = DateTime::createFromFormat('Y-m-d', '2020-12-27');
+				$dateNow = DateTime::createFromFormat('Y-m-d', $dateLastDataReg);
+				$diff = $dateNow->diff($dateBegin)->days;
 				$strData = "[";
+				$cumul = 0;
 				for($i = 0; $i <= $diff; $i++) {
-					$strData .= "'" . $totalVac[$dateBegin->format('Y-m-d')] . "',";
+					$cumul += $vaccinFrance[$dateBegin->format('Y-m-d')];
+					$strData .= "'" . $cumul . "',";
 					$dateBegin->add(new DateInterval('P1D'));
 				}
 				$strData = substr($strData, 0, -1);
 				$strData .= "]";
-				echo '<script>createChartFrance("' . $strData . '", "' . getStringDate($dayLastData) . '");</script>';?>
+				echo '<script>createChartFrance("' . $strData . '", "' . getStringDate($dateLastDataReg) . '");</script>';?>
+		</div>
+	</div>
+
+	<div class="container">
+		<h2>Pourcentage de la population vaccinée par âge</h2>
+		<div class="chart-fr-container">
+			<canvas id="chart_age_fr"></canvas>
+			<?php 
+				$pourcentage = [];
+				foreach($vaccinTotalAge as $key => $vaccin) {
+					$pourcentageFirst[$key] = round(($vaccin['first'] / $populationAge[$key]) * 100, 2);
+					$pourcentageSecond[$key] = round(($vaccin['second'] / $populationAge[$key]) * 100, 2);
+				}
+				
+				$strDataFirst = '[' . implode(',', $pourcentageFirst) . ']';
+				$strDataSecond = '[' . implode(',', $pourcentageSecond) . ']';
+				echo '<script>createChartPourcentAge(' . $strDataFirst . ', '. $strDataSecond . ');</script>';?>
 		</div>
 	</div>
 	
@@ -476,9 +768,13 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				$arrayRegPerc = [];
 				foreach($arrayReg as $keyReg => $region) {
 					if(isset($region['x']) && isset($region['y'])) {
-						foreach($arrayVac as $key => $vaccin) {
+						foreach($vaccinReg as $key => $vaccin) {
 							if($key === $keyReg) {
-								$arrayRegPerc[$key] = round(($vaccin[$dayLastData] / $region['pop']) * 100, 3);
+								$dateLastData = DateTime::createFromFormat("Y-m-d", $dateLastDataReg);
+								while(!isset($vaccin[$dateLastData->format('Y-m-d')])) {
+									$dateLastData->sub(new DateInterval('P1D'));
+								}
+								$arrayRegPerc[$key] = round(($vaccin[$dateLastData->format("Y-m-d")] / $region['pop']) * 100, 3);
 								echo '<text class="text-svg" id="map-' . strtolower($key) . '" style="fill:white;" y="' . $region['x'] . '" x="' . $region['y'] . '">' . $arrayRegPerc[$key] . ' %</text>';
 							}
 						}
@@ -512,9 +808,9 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 				$arrayRegDosePerc = [];
 				foreach($arrayReg as $keyReg => $region) {
 					if(isset($region['x']) && isset($region['y'])) {
-						foreach($arrayVac as $key => $vaccin) {
+						foreach($vaccinReg as $key => $vaccin) {
 							if($key === $keyReg) {
-								$arrayRegDosePerc[$key] = getPercentDoseUsed($arrayVac, $deliveriesReg, strtoupper($key), $dayLastData, $dayLastDataDelivery);
+								$arrayRegDosePerc[$key] = getPercentDoseUsed($vaccinReg, $deliveriesReg, strtoupper($key), $dateLastDataReg, $dayLastDataDelivery);
 								echo '<text class="text-svg" id="map-' . strtolower($key) . '" style="fill:white;" y="' . $region['x'] . '" x="' . $region['y'] . '">' . $arrayRegDosePerc[$key] . ' %</text>';
 							}
 						}
@@ -524,40 +820,70 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			</svg>
 		</div>
 	</div>
+
+
 	
 	<div class="container">
 		<h2>Régions</h2>
 		<div class="reg-list">
 			<?php 
 				foreach($arrayReg as $key => $region) {
-					echo '<a class="btn-reg" href="#' . $key . '">' . $region['name'] . '</a>' ;
+					echo '<a class="btn-reg" id="btn-' . $key . '">' . $region['name'] . '</a>' ;
 				}
 			?>
 		</div>
-		<div class="grid-container">
+		<div class="flex-container region-card">
 			<?php 
 			$dataChart = "";
 			foreach($arrayReg as $keyReg => $region) {
-				echo '<div class="grid-card" id="'. $keyReg .'">';
+				echo '<div class="grid-card reg" id="'. $keyReg .'">';
 					echo '<h3>'. $region['name'] . '</h3>';
-					foreach($arrayVac as $key => $vaccin) {
-						$dataChart = '[' . implode(',', $vaccin) . ']';
+					echo '<div class="reg-data"><div class="text-data">';
+					foreach($vaccinReg as $key => $vaccin) {						
 						if($key === $keyReg) {
-							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dayLastData]), 3, ' ', true)) .'</b> personnes vaccinées<p>';
-							echo '<p><b>'. round(($vaccin[$dayLastData] / $region['pop']) * 100, 3) .'</b> % de la population<p>';
-							echo "<p>Augmentation de <b>" . getIncrease($arrayVac, $key, $dayLastDataOneLess, $dayLastData) . "</b> vaccinations sur la dernière journée</p>";
-							echo "<p>Moyenne sur 7 jours : <b>" . getAverage7DaysReg($arrayVac, $dayLastData, $key) . "</b>";
-							echo "<p>Date à laquelle les 60 % de la population seront vaccinés (potentielle immunité collective) en conservant la moyenne sur 7 jours : <b>" 
-								. getNumberDayToFinish($region, getAverage7DaysReg($arrayVac, $dayLastData, $key), $vaccin, $dayLastData, 60) . "</b>";
-							echo "<p>Date à laquelle toute la population sera vaccinée en conservant la moyenne sur 7 jours : <b>" 
-								. getNumberDayToFinish($region, getAverage7DaysReg($arrayVac, $dayLastData, $key), $vaccin, $dayLastData) . "</b>";
-							echo '<div class="chart-reg-container" style="position: relative; width:80%;">';
+							$dateLastData = DateTime::createFromFormat("Y-m-d", array_key_last($vaccin));
+							while(array_key_last($vaccin) !== $dateLastDataReg) {
+								$vaccin[$dateLastData->format('Y-m-d')] = end($vaccin);
+								$dateLastData->add(new DateInterval('P1D'));
+							}
+							$dataChart = '[' . implode(',', $vaccin) . ']';
+							$dataPie = '[' . implode(',', $vaccinTotalRegAge[$key]) . ']';
+							$dataPieSexe = '[' . implode(',', $vaccinTotalRegSexe[$key]) . ']';
+
+							echo '<p><b>'. strrev(wordwrap(strrev($vaccin[$dateLastDataReg]), 3, ' ', true)) .'</b> (+ <b>' . formatNumber(getIncrease($vaccinReg, $key, $dateLastDataRegOneLess, $dateLastDataReg)) . '</b>) personnes partiellement vaccinées<p>';
+							echo '<p><b>'. round(($vaccin[$dateLastDataReg] / $region['pop']) * 100, 2) .'</b> % de la population<p>';
+							echo "<p>Moyenne sur 7 jours : <b>" . formatNumber(getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key)) . "</b> injections";
+							echo "<p>70 % de la population sera partiellement vaccinée le : <b>" 
+								. getNumberDayToFinish($region, getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key), $vaccin, $dateLastDataReg, 70) . "</b>";
+							echo "<p>100 % de la population sera partiellement vaccinée le : <b>" 
+								. getNumberDayToFinish($region, getAverage7DaysReg($vaccinReg, $dateLastDataReg, $key), $vaccin, $dateLastDataReg) . "</b>";
+							echo '<div class="chart-reg-container" style="position: relative; width:100%;">';
 								echo '<canvas id="chart_' . $key . '"></canvas>';
-								echo '<script>createChart("'. $key . '", "'. $dataChart .'", "'. getStringDate($dayLastData) . '");</script>';
+								echo '<script>createChart("'. $key . '", "'. $dataChart .'", "'. getStringDate($dateLastDataReg) . '");</script>';
+							echo '</div></div>';
+							echo '<div class="chart-data">';
+								echo '<h4>Répartition par âge</h4>';
+								echo '<canvas class="pie" id="pie_age_' . $key . '"></canvas>';
+								echo '<p><i>Cliquez sur le graphique pour plus d\'informations</i></p>';
+								echo '<h4>Répartition par sexe</h4>';
+								echo '<canvas class="pie" id="pie_sexe_' . $key . '"></canvas>';
+								echo '<p><i>Cliquez sur le graphique pour plus d\'informations</i></p>';
+								echo '<script>createPieAge("'. $key .'", '. $dataPie .');</script>';
+								echo '<script>createPieSexe("'. $key .'", '. $dataPieSexe .');</script>';
 							echo '</div>';
 						}
 					}
 				echo '</div>';
+				echo '<div><h4>Par département :</h4>';
+				echo '<table><tr><th>Nom</th><th>1ère dose</th><th>1ère dose %</th></tr>';
+				foreach($vaccinDep as $dep => $value) {
+					foreach($region['deps'] as $depId) {
+						if($depId == $dep) {
+							echo '<tr><td>'. $departements[$dep]["name"] . ' ('. $dep .')</td><td>' . $value . '</td><td>'. round(($value / $departements[$dep]["pop"]) * 100, 2) . ' %</td></tr>';
+						}
+					}
+				}
+				echo '</table></div></div>';
 			}?>
 		</div>
 	</div>
@@ -568,7 +894,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<div class="data-world">
 			<iframe src="https://ourworldindata.org/grapher/cumulative-covid-vaccinations?tab=chart&stackMode=absolute&time=latest&region=World" loading="lazy" style="width: 100%; height: 600px; border: 0px none;"></iframe>
 		</div>
-	</div>
+	</div> 
 	
 	<div class="footer">
 		<p>2021 - Marc Léger - Tous droits réservés - <a href="about">À propos</a></p>
@@ -578,7 +904,7 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 		<?php
 		foreach($arrayReg as $keyReg => $region) {
 			if(isset($region['x']) && isset($region['y'])) {
-				foreach($arrayVac as $key => $vaccin) {
+				foreach($vaccinReg as $key => $vaccin) {
 					if($key === $keyReg) {
 						echo 'document.getElementById("svg-' . strtolower($key) . '").style.fill = "' . getColorRegion($arrayRegPerc, $key) . '";';
 						echo 'document.getElementById("svg-' . strtolower($key) . '-dose").style.fill = "' . getColorDose($arrayRegDosePerc, $key) . '";';
@@ -587,6 +913,19 @@ function getPercentDoseUsed($arrayVac, $deliveriesReg, $reg, $dayLastData, $dayL
 			}
 		}
 		?>
+
+		var btnRegs = document.getElementsByClassName('btn-reg');
+		document.getElementById("ARA").style.display = "block";
+		for (let item of btnRegs) {
+			item.addEventListener("click", function() {
+				var idReg = this.id.replace("btn-", "");
+				var cards = document.getElementsByClassName('grid-card reg');
+				for (let card of cards) {
+					card.style.display = "none";
+				}
+				document.getElementById(idReg).style.display = "block";
+			});
+		}
 
 		//Get the button
 		var btnTop = document.getElementById("btn-top");
