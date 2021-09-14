@@ -105,10 +105,11 @@ $departements["976"] = ["name" => "Mayotte", "pop" => 288926];
 
 if (($handle = fopen("https://www.data.gouv.fr/fr/datasets/r/7969c06d-848e-40cf-9c3c-21b5bd5a874b", "r")) !== FALSE) {
 	$row = 0;
-    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+    while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
 		if($row > 0) {
             if($data[0] != "00" && $data[0] != "970" && $data[0] != 977) {
-                $vaccinDep[$data[0]] = intval($data[2]); 		
+                $vaccinDep[$data[0]]['first'] = intval($data[2]); 		
+				$vaccinDep[$data[0]]['second'] = intval($data[3]);
             }
 		}
         $row++;

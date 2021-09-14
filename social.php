@@ -1,16 +1,38 @@
 <?php
-header('Content-Type: image/png');
-$im = imagecreate(1080, 1080);
-$im = imagecreatefrompng("vaccinator_logo.png");
-// Couleurs
-//$black = imagecolorallocate($im, 0, 0, 0);
-$white = imagecolorallocate($im, 255, 255, 255);
-// Le texte à écrire
-$text = "Chiffre du 01/02/2021";
-//$font = 'Arial.ttf';
-// Ajouter le texte
-//imagettftext($im, 30, 0, 10, 70, $white, $font, $text);
-imagepng($im);
-//imagedestroy($im);
+
+/*
+$usmap = 'test.svg';
+$usmap = '05-02-2021.svg';
+
+
+try {
+	$im = new Imagick();
+	$im->setResolution(288,288);
+	$im->setBackgroundColor(new ImagickPixel('transparent')); 
+
+	$svg = file_get_contents($usmap);
+	
+	//$im->setFont("Roboto-Regular.ttf");
+	$im->readImageBlob($svg);
+	$im->setImageFormat("JPEG");
+	$im->writeImage('png/percent.jpeg');
+
+	header('Content-type: image/jpeg');
+	echo $im;
+} catch (ImagickException $e) 
+{
+	var_dump($e);
+}
+//echo $svg;
+
+/*
+$im->setImageFormat("png24");
+$im->resizeImage(720, 445, imagick::FILTER_LANCZOS, 1); 
+
+$im->writeImage('blank-us-map.png');
+
+header('Content-type: image/png');
 echo $im;
-?>
+
+$im->clear();
+$im->destroy();*/

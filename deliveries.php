@@ -5,13 +5,17 @@
 function getLastDataFrance($arrayDeliveries, $flux) 
 {
     $dateNow = new DateTime();
-
-    foreach($arrayDeliveries as $fluxKey => $delivery) {
-        foreach($delivery as $date => $amount) {
+    foreach($arrayDeliveries as $date => $delivery) {
+        foreach($delivery as $fluxKey => $amount) {
             if($fluxKey === $flux) {
-                $dateLastDelivery = DateTime::createFromFormat('Y-m-d', $date);
+                if(strpos($date, "-")) {
+                    $dateLastDelivery = DateTime::createFromFormat('Y-m-d', $date);
+                } else {
+                    $dateLastDelivery = DateTime::createFromFormat('d/m/Y', $date);
+                }
+                //$dateLastDelivery = DateTime::createFromFormat('Y-m-d', $date);
                 if($dateNow->getTimestamp() >= $dateLastDelivery->getTimestamp()) {
-                    $lastDelivery = $delivery[$dateLastDelivery->format('Y-m-d')];
+                    $lastDelivery = $delivery[$flux];
                 }    
             }
         }
@@ -29,6 +33,7 @@ function getLastDataReg($arrayDeliveries, $reg)
     foreach($arrayDeliveries[$reg] as $date => $total) {
         if($date != 'total') {
             $dateLastDelivery = DateTime::createFromFormat('Y-m-d', $date);
+            //$dateLastDelivery = DateTime::createFromFormat('d/m/Y', $date);
             if($dateNow->getTimestamp() >= $dateLastDelivery->getTimestamp()) {
                 $diffDay = $dateLastDelivery->diff($dateNow)->days;
                 if($diffDay < $lastDiffDay) {
